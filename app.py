@@ -6,9 +6,6 @@ def main():
 
     st.title("Graphlit")
 
-    if "graph" not in st.session_state:
-        st.session_state.graph = Graph()
-
     uploaded_file = st.sidebar.file_uploader("Upload JSON (Optional)")
     if uploaded_file is not None:
         if st.sidebar.button("Load JSON"):
@@ -16,6 +13,9 @@ def main():
             st.session_state.graph = Graph(clusters=uploaded_json["clusters"],
                             nodes=uploaded_json["nodes"],
                             edges=uploaded_json["edges"])
+            
+    if "graph" not in st.session_state:
+        st.session_state.graph = Graph()
    
     node_col, edge_col = st.columns([2, 1])
 
@@ -70,20 +70,21 @@ def main():
     selected_labels = graphcols[0].multiselect("Select Labels", st.session_state.graph.get_cluster_labels(), default=st.session_state.selected_labels, key="labels_select")
     st.session_state.selected_labels = selected_labels
 
-    subgraph = st.session_state.graph.get_labels_subgraph(selected_labels)
+    st.session_state.subgraph = st.session_state.graph.get_labels_subgraph(selected_labels)
     
     rankdir_lr = False
-    if graphcols[1].radio("Layout", ["Left/Right", "Top/Bottom"]) == "Left/Right":
+    if graphcols[1].radio("Layout", ["Top/Bottom", "Left/Right"]) == "Left/Right":
         rankdir_lr = True
 
     if len(selected_labels) > 0:
-        st.graphviz_chart(st.session_state.graph.build_digraph(digraph=subgraph, rankdir_lr=rankdir_lr))
+        st.graphviz_chart(st.session_state.graph.build_digraph(digraph=st.session_state.subgraph, rankdir_lr=rankdir_lr))
 
     st.subheader("JSON")
-    st.json(subgraph, expanded=False)
+    st.json(st.session_state.subgraph, expanded=False)
 
-    st.download_button("Download Subgraph JSON", json.dumps(subgraph), "subgraph.json")
+    st.download_button("Download Subgraph JSON", json.dumps(st.session_state.subgraph ), "subgraph.json")
     st.sidebar.download_button("Download Graph JSON", json.dumps(st.session_state.graph.graph), "graph.json")
+    
 
 if __name__ == "__main__":
     main()

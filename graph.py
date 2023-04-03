@@ -142,7 +142,7 @@ class Graph():
 
         return subgraph
     
-    def prep_digraph_text(self, text, n=3, x=10):
+    def prep_text(self, text, n=3, x=5):
         words = text.split()
         total_words = min(len(words), x)
         formatted_words = []
@@ -158,7 +158,7 @@ class Graph():
         return '\n'.join(formatted_words)
 
     
-    def build_digraph(self,digraph=None, rankdir_lr=True):
+    def build_digraph(self, digraph=None, rankdir_lr=True):
         dot = Digraph()
         if digraph == None:
             digraph = self.graph
@@ -167,24 +167,19 @@ class Graph():
             dot.graph_attr['rankdir'] = 'LR'
 
         for label, label_ranks in digraph[self.clusters_key].items():
-
-            with dot.subgraph(name=f"cluster_{label}") as sub:
-                sub.attr(label=label, labeljust='l', labelloc='t', style='filled', fillcolor='lightgrey', margin="10")
-
+            label_name = f"cluster_{label}"
+            with dot.subgraph(name=label_name) as sub:
+                sub.attr(label=label, labeljust='l', labelloc='t', style='rounded,filled', fillcolor='lightgrey', margin='10', group=label_name)
                 for rank, rank_node_ids in label_ranks.items():
-                    with sub.subgraph(name=f"cluster_{label}_{rank}") as rank_sub:
-                        rank_sub.attr(label=rank, labeljust='l', labelloc='t', style='filled', fillcolor='white', margin="5")
-
-                        for i, node_id in enumerate(rank_node_ids):
-                            n_label = f"{self.prep_digraph_text(digraph[self.nodes_key][node_id][self.text_attr])}\n(ID: {node_id})"
-                            rank_sub.node(node_id, n_label, shape='ellipse')
-                            if i > 0: 
-                                rank_sub.edge(rank_node_ids[i - 1], node_id, style='invis') 
+                    label_rank_name = f"cluster_{label}_{rank}"
+                    with sub.subgraph(name=label_rank_name) as rank_sub:
+                        rank_sub.attr(label=rank, labeljust='l', labelloc='t', style='rounded,filled', fillcolor='white', margin='10', group=label_rank_name)
+                        for node_id in rank_node_ids:
+                            rank_sub.node(node_id, f"{self.prep_text(digraph[self.nodes_key][node_id][self.text_attr])}\n(ID: {node_id})", style='filled', shape='box', fillcolor='black', fontcolor='white', group=label_rank_name)
                         rank_sub.graph_attr[self.rank_attr] = 'same'
 
         for edge in digraph[self.edges_key]:
             dot.edge(edge[self.from_key], edge[self.to_key])
 
         return dot
-
     
