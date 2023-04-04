@@ -1,4 +1,4 @@
-# Graphlit - A Streamlit app for creating, editing, and visualizing graphs
+# Graphlit 🔍 - A Streamlit app for creating, editing, and visualizing graphs
 
 ![alt text](https://github.com/mitch-parker/graphlit/blob/main/logo.png)
 

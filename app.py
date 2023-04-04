@@ -12,7 +12,7 @@ def main():
     title_cols = st.columns([1, 3])
     image = Image.open(f"{__file__.rsplit('/', 1)[0]}/logo.png")
     title_cols[0].image(image)
-    title_cols[1].markdown("# Graphlit")
+    title_cols[1].markdown("# Graphlit 🔍")
     title_cols[1].markdown("#### A Streamlit app for creating, editing, and visualizing graphs")
 
     # Add summary of app in sidebar
