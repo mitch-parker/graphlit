@@ -8,6 +8,9 @@ from graph import Graph
 # Main function for the app
 def main():
 
+    # Set page config
+    st.set_page_config(page_title="Graphlit", page_icon="🔍")
+
     # Set the app's title
     title_cols = st.columns([1, 3])
     image = Image.open(f"{__file__.rsplit('/', 1)[0]}/logo.png")
@@ -19,7 +22,6 @@ def main():
     st.sidebar.markdown("## Summary")
     st.sidebar.markdown("Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users can upload JSON files with graph structures or build graphs from scratch using the input fields provided.")
     st.sidebar.markdown("See our [GitHub Page](https://github.com/mitch-parker/graphlit) for further details.")
-    st.sidebar.markdown("[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/bukotsunikki.svg?style=social&label=Follow%20%40Mitch_P)](https://twitter.com/Mitch_P)")
 
     with st.sidebar.expander("Features"):
         st.markdown(
@@ -30,6 +32,8 @@ def main():
             4. Export subgraphs or entire graph structures as JSON files.
             '''
         )
+
+    st.sidebar.markdown("[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/bukotsunikki.svg?style=social&label=Follow%20%40Mitch_P)](https://twitter.com/Mitch_P)")
 
     # Add a divider under the app's title
     st.markdown("---")

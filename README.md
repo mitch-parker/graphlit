@@ -1,7 +1,5 @@
 # Graphlit 🔍 - A Streamlit app for creating, editing, and visualizing graphs
 
-![alt text](https://github.com/mitch-parker/graphlit/blob/main/logo.png)
-
 [![mitch-parker - graphlit](https://img.shields.io/static/v1?label=mitch-parker&message=graphlit&color=blue&logo=github)](https://github.com/mitch-parker/graphlit "Go to GitHub repo")
 [![stars - graphlit](https://img.shields.io/github/stars/mitch-parker/graphlit?style=social)](https://github.com/mitch-parker/graphlit)
 [![forks - graphlit](https://img.shields.io/github/forks/mitch-parker/graphlit?style=social)](https://github.com/mitch-parker/graphlit)
