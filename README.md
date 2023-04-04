@@ -56,6 +56,15 @@ Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users
 
 Contributions, issues, and feature requests are welcome. Check the [issues page](https://github.com/mitch-parker/graphlit/issues) to contribute.
 
+## Authors
+
+Please feel free to contact us with any suggestions, comments, or questions.
+
+#### Mitchell Parker [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/bukotsunikki.svg?style=social&label=Follow%20%40Mitch_P)](https://twitter.com/Mitch_P)
+
+- Email: <mitch.isaac.parker@gmail.com>
+- GitHub: https://github.com/mitch-parker
+
 ## License
 
 Apache-2.0. See [LICENSE](https://github.com/mitch-parker/graphlit/blob/main/LICENSE) for details.
