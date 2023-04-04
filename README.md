@@ -1,5 +1,15 @@
 # Graphlit
 
+![alt text](https://github.com/mitch-parker/graphlit/blob/main/logo.png)
+
+[![mitch-parker - graphlit](https://img.shields.io/static/v1?label=mitch-parker&message=graphlit&color=blue&logo=github)](https://github.com/mitch-parker/graphlit "Go to GitHub repo")
+[![stars - graphlit](https://img.shields.io/github/stars/mitch-parker/graphlit?style=social)](https://github.com/mitch-parker/graphlit)
+[![forks - graphlit](https://img.shields.io/github/forks/mitch-parker/graphlit?style=social)](https://github.com/mitch-parker/graphlit)
+
+[![GitHub tag](https://img.shields.io/github/tag/mitch-parker/graphlit?include_prereleases=&sort=semver&color=blue)](https://github.com/mitch-parker/graphlit/releases/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-blue)](#license)
+[![issues - graphlit](https://img.shields.io/github/issues/mitch-parker/graphlit)](https://github.com/mitch-parker/graphlit/issues)
+
 Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users can upload JSON files with graph structures or build graphs from scratch using the input fields provided.
 
 ## Features
