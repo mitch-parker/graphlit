@@ -10,6 +10,8 @@
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue)](#license)
 [![issues - graphlit](https://img.shields.io/github/issues/mitch-parker/graphlit)](https://github.com/mitch-parker/graphlit/issues)
 
+## Summary
+
 Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users can upload JSON files with graph structures or build graphs from scratch using the input fields provided.
 
 ## Features
