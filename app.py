@@ -13,15 +13,18 @@ def main():
 
     # Set the app's title
     title_cols = st.columns([1, 3])
+
     image = Image.open(f"{__file__.rsplit('/', 1)[0]}/logo.png")
     title_cols[0].image(image)
+    title_cols[0].markdown("Powered by [GraphViz](https://graphviz.org).")
+
     title_cols[1].markdown("# Graphlit 🔍")
     title_cols[1].markdown("#### A Streamlit app for creating, editing, and visualizing graphs")
+    title_cols[1].markdown("**Developed by Mitchell Parker**")
 
     # Add summary of app in sidebar
     st.sidebar.markdown("## Summary")
     st.sidebar.markdown("Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users can upload JSON files with graph structures or build graphs from scratch using the input fields provided.")
-    st.sidebar.markdown("See our [GitHub Page](https://github.com/mitch-parker/graphlit) for further details.")
 
     with st.sidebar.expander("Features"):
         st.markdown(
@@ -33,6 +36,7 @@ def main():
             '''
         )
 
+    st.sidebar.markdown("See our [GitHub Page](https://github.com/mitch-parker/graphlit) for further details.")
     st.sidebar.markdown("[![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/bukotsunikki.svg?style=social&label=Follow%20%40Mitch_P)](https://twitter.com/Mitch_P)")
 
     # Add a divider under the app's title
@@ -212,7 +216,7 @@ def main():
     json_cols = st.columns(2)
     # Display the subgraph JSON
     json_cols[0].markdown("## JSON")
-    json_cols[0].json(st.session_state.subgraph, expanded=False)
+    json_cols[0].json(st.session_state.subgraph, expanded=True)
 
     # Offer download buttons for the subgraph JSON and full graph JSON
     json_cols[1].markdown("## Download")
