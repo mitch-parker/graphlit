@@ -160,17 +160,17 @@ class Graph():
 
         return subgraph
 
-    def prep_text(self, text, n=3, x=5):
-        # Reformats a text string into chunks of n words, up to x words total
+    def prep_text(self, text, words_per_text=5, words_per_text_line=3):
+        # Reformats a text string into chunks of words_per_text_line words, up to words_per_text total
         words = text.split()
-        total_words = min(len(words), x)
+        total_words = min(len(words), words_per_text)
         formatted_words = []
 
-        for i in range(0, total_words, n):
-            chunk = words[i:i + n]
+        for i in range(0, total_words, words_per_text_line):
+            chunk = words[i:i + words_per_text_line]
             formatted_words.append(' '.join(chunk))
 
-            if i + n >= x:
+            if i + words_per_text_line >= words_per_text:
                 formatted_words.append('...')
                 break
 
@@ -182,7 +182,7 @@ class Graph():
                       rank_fillcolor='white', rank_fontcolor='black', 
                       node_fillcolor='black', node_fontcolor='white', 
                       node_shape='box', node_style='rounded,filled',
-                      rankdir_lr=True):
+                      rankdir_lr=True, words_per_node=5, words_per_node_line=3):
         # Builds a Digraph object from the graph
         dot = Digraph()
         if digraph == None:
@@ -219,7 +219,7 @@ class Graph():
                                 if self.is_node_attr(node_id, attr):
                                     node_attr[attr] = self.get_node_attr(node_id, attr)
 
-                            rank_sub.node(node_id, f"{self.prep_text(digraph[self.nodes_key][node_id][self.text_attr])}\n(ID: {node_id})", 
+                            rank_sub.node(node_id, f"{self.prep_text(digraph[self.nodes_key][node_id][self.text_attr], words_per_text_line=words_per_node_line, words_per_text=words_per_node)}\n(ID: {node_id})", 
                                           style=node_attr[self.style_attr], fillcolor=node_attr[self.fillcolor_attr], 
                                           fontcolor=node_attr[self.fontcolor_attr], shape=node_attr[self.shape_attr], 
                                           penwidth='0', group=cluster_rank_name)

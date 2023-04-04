@@ -42,17 +42,20 @@ Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users
 ```json
 {
   "clusters": {
-    "Cluster_1": {"Rank_1": ["Node_1"], "Rank_2": ["Node_2"]},
-    "Cluster_2": {"Rank_3": ["Node_3", "Node_4"]}
+      "Cluster 1": {"Rank 1": ["1"], "Rank 2": ["2"]},
+      "Cluster 2": {"Rank 3": ["3", "4"]}
   },
   "nodes": {
-    "Node_1": {"cluster": "Cluster_1", "rank": "Rank_1", "text": "Node 1 Text"},
-    "Node_2": {"cluster": "Cluster_1", "rank": "Rank_2", "text": "Node 2 Text"},
+      "1": {"cluster": "Cluster 1", "rank": "Rank 1", "text": "Node 1"},
+      "2": {"cluster": "Cluster 1", "rank": "Rank 2", "text": "Node 2"},
+      "3": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 3"},
+      "4": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 4"},
     ...
   },
   "edges": [
-    {"from": "Node_1", "to": "Node_2"},
-    {"from": "Node_2", "to": "Node_3"},
+      {"from": "1", "to": "2"},
+      {"from": "1", "to": "3"},
+      {"from": "2", "to": "4"},
     ...
   ]
 }
