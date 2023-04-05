@@ -48,16 +48,16 @@ Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users
   "nodes": {
       "1": {"cluster": "Cluster 1", "rank": "Rank 1", "text": "Node 1"},
       "2": {"cluster": "Cluster 1", "rank": "Rank 2", "text": "Node 2"},
-      "3": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 3"},
-      "4": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 4"},
+      "3": {"cluster": "Cluster 2", "rank": "Rank 3", "text": "Node 3"},
+      "4": {"cluster": "Cluster 2", "rank": "Rank 3", "text": "Node 4"},
     ...
   },
-  "edges": [
-      {"from": "1", "to": "2"},
-      {"from": "1", "to": "3"},
-      {"from": "2", "to": "4"},
+  "edges": {
+    "1 -> 2": {},
+    "1 -> 3": {},
+    "2 -> 4": {},
     ...
-  ]
+  }
 }
 ```
 

@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import webbrowser
+from copy import deepcopy
 from PIL import Image
 from graph import Graph
 
@@ -9,10 +10,10 @@ from graph import Graph
 def main():
 
     # Set page config
-    st.set_page_config(page_title="Graphlit", page_icon="🔍")
+    st.set_page_config(page_title="Graphlit", page_icon="🔍", layout="wide")
 
     # Set the app's title
-    title_cols = st.columns([1, 3])
+    title_cols = st.columns([1, 4])
 
     title_cols[1].markdown("# Graphlit 🔍")
     title_cols[1].markdown("#### A Streamlit app for creating, editing, and visualizing graphs")
@@ -42,11 +43,18 @@ def main():
     # Add a divider under the app's title
     st.markdown("---")
 
+    # Initialize session state items
+    if "graph" not in st.session_state:
+        st.session_state.graph = Graph()
+    if "subgraph_cluster_ids" not in st.session_state:
+        st.session_state.subgraph_cluster_ids= []
+
     # Add option to clear graph and load example
     clear_example_cols = st.sidebar.columns(2)
     clear_example_cols[0].markdown("## Reset")
     if clear_example_cols[0].button("Clear Graph"):
         st.session_state.graph = Graph()
+        st.session_state.subgraph_cluster_ids= []
 
     clear_example_cols[1].markdown("## Example")  
     if clear_example_cols[1].button("Load Graph", key="load_example"):  
@@ -57,14 +65,14 @@ def main():
                                     nodes={
                                         "1": {"cluster": "Cluster 1", "rank": "Rank 1", "text": "Node 1"},
                                         "2": {"cluster": "Cluster 1", "rank": "Rank 2", "text": "Node 2"},
-                                        "3": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 3"},
-                                        "4": {"cluster": "Cluster 1", "rank": "Rank 3", "text": "Node 4"},
+                                        "3": {"cluster": "Cluster 2", "rank": "Rank 3", "text": "Node 3"},
+                                        "4": {"cluster": "Cluster 2", "rank": "Rank 3", "text": "Node 4"},
                                     },
-                                    edges=[
-                                        {"from": "1", "to": "2"},
-                                        {"from": "1", "to": "3"},
-                                        {"from": "2", "to": "4"},
-                                    ])
+                                    edges={
+                                        "1 -> 2": {},
+                                        "1 -> 3": {},
+                                        "2 -> 4": {},
+                                    })
 
     # Allow user to upload a JSON file
     st.sidebar.markdown("## Upload")
@@ -77,10 +85,6 @@ def main():
             st.session_state.graph = Graph(clusters=uploaded_json["clusters"],
                                            nodes=uploaded_json["nodes"],
                                            edges=uploaded_json["edges"])
-
-    # Initialize an empty Graph object if one has not been loaded
-    if "graph" not in st.session_state:
-        st.session_state.graph = Graph()
 
     # Create layout columns for the app
     node_col, edge_col = st.columns([2, 1])
@@ -128,64 +132,64 @@ def main():
     if not add_mode:
         node_id = bottom_node_subcols[0].selectbox("ID", st.session_state.graph.get_node_ids(), key="node_id")
 
-    attr_keys = [st.session_state.graph.cluster_attr, st.session_state.graph.rank_attr,
+    node_attr_keys = [st.session_state.graph.cluster_attr, st.session_state.graph.rank_attr,
                   st.session_state.graph.text_attr, st.session_state.graph.fillcolor_attr,
                   st.session_state.graph.fontcolor_attr, st.session_state.graph.shape_attr,
                   st.session_state.graph.style_attr]
-    node_vals = {}
-    for attr in attr_keys:
-        val = ""
+    node_values = {}
+    for attr_key in node_attr_keys:
+        node_val = ""
         if not add_mode:
-            if st.session_state.graph.is_node_attr(node_id, attr):
-                val = st.session_state.graph.get_node_attr(node_id, attr)
-        node_vals[attr] = val
+            if st.session_state.graph.is_node_attr(node_id, attr_key):
+                node_val = st.session_state.graph.get_node_attr(node_id, attr_key)
+        node_values[attr_key] = node_val
 
-    cluster = "Cluster"
+    node_cluster = "Cluster"
     if not auto_cluster:
-        cluster = bottom_node_subcols[0+bottom_fix].text_input("Cluster", 
-                                                        value=node_vals[st.session_state.graph.cluster_attr], 
+        node_cluster = bottom_node_subcols[0+bottom_fix].text_input("Cluster", 
+                                                        value=node_values[st.session_state.graph.cluster_attr], 
                                                         key="node_cluster")
     
-    rank = "Rank"
+    node_rank = "Rank"
     if not auto_rank:
-        rank = bottom_node_subcols[1+bottom_fix].text_input("Rank", 
-                                                    value=node_vals[st.session_state.graph.rank_attr], 
+        node_rank = bottom_node_subcols[1+bottom_fix].text_input("Rank", 
+                                                    value=node_values[st.session_state.graph.rank_attr], 
                                                     key="node_rank")
 
-    text = node_col.text_area("Text", 
-                              value=node_vals[st.session_state.graph.text_attr], 
+    node_text = node_col.text_area("Text", 
+                              value=node_values[st.session_state.graph.text_attr], 
                               key="node_text")
 
-    node_attr = {st.session_state.graph.cluster_attr: cluster, 
-                st.session_state.graph.rank_attr: rank, 
-                st.session_state.graph.text_attr: text}
+    node_attr = {st.session_state.graph.cluster_attr: node_cluster, 
+                st.session_state.graph.rank_attr: node_rank, 
+                st.session_state.graph.text_attr: node_text}
 
     with node_col.expander("Optional Input"):
 
-        fillcolor = st.text_input("Fill Color", 
-                                  value=node_vals[st.session_state.graph.fillcolor_attr], 
+        node_fillcolor = st.text_input("Fill Color", 
+                                  value=node_values[st.session_state.graph.fillcolor_attr], 
                                   key="node_fillcolor")
-        fontcolor = st.text_input("Font Color", 
-                                  value=node_vals[st.session_state.graph.fontcolor_attr], 
+        node_fontcolor = st.text_input("Font Color", 
+                                  value=node_values[st.session_state.graph.fontcolor_attr], 
                                   key="node_fontcolor")
-        shape = st.text_input("Shape", 
-                              value=node_vals[st.session_state.graph.shape_attr], 
+        node_shape = st.text_input("Shape", 
+                              value=node_values[st.session_state.graph.shape_attr], 
                               key="node_shape")
-        style = st.text_input("Style", 
-                              value=node_vals[st.session_state.graph.style_attr], 
+        node_style = st.text_input("Style", 
+                              value=node_values[st.session_state.graph.style_attr], 
                               key="node_style")
         
         st.markdown("See [Graphviz](https://graphviz.org) for details.")
         
-        for attr, val in {st.session_state.graph.fillcolor_attr: fillcolor,
-                          st.session_state.graph.fontcolor_attr: fontcolor,
-                          st.session_state.graph.shape_attr: shape,
-                          st.session_state.graph.style_attr: style}.items():
-            if val != "":
-                node_attr.update({attr: val})
+        for node_attr, node_val in {st.session_state.graph.fillcolor_attr: node_fillcolor,
+                          st.session_state.graph.fontcolor_attr: node_fontcolor,
+                          st.session_state.graph.shape_attr: node_shape,
+                          st.session_state.graph.style_attr: node_style}.items():
+            if node_val != "":
+                node_attr.update({node_attr: node_val})
 
     # Create buttons to add, edit, and remove nodes
-    if len([x for x in [cluster, rank, text] if x == ""]) != 0:
+    if len([x for x in [node_cluster, node_rank, node_text] if x == ""]) != 0:
         node_col.info("Please input cluster, rank, and text.")
     else:
         if add_mode:
@@ -208,9 +212,22 @@ def main():
     from_node_id = edge_subcols[0].selectbox("From ID", st.session_state.graph.get_node_ids(), key="from_node_id")
     to_node_id = edge_subcols[1].selectbox("To ID", st.session_state.graph.get_node_ids(), key="to_node_id")
 
+    edge_attr = {}
+    with edge_col.expander("Optional Input"):
+        edge_label = st.text_input("Label", 
+                                  key="edge_label")
+        if edge_label != "":
+            edge_attr[st.session_state.graph.label_attr] = edge_label
+        edge_color = st.text_input("Color", 
+                                  key="edge_color")
+        if edge_color != "":
+            edge_attr[st.session_state.graph.color_attr] = edge_color
+        
+        st.markdown("See [Graphviz](https://graphviz.org) for details.")
+
     # Create buttons to add and remove edges
     if edge_col.button("Add", key="add_edge"):
-        st.session_state.graph.add_edge(from_node_id, to_node_id)
+        st.session_state.graph.add_edge(from_node_id, to_node_id, edge_attr=edge_attr)
 
     if edge_col.button("Remove", key="remove_edge"):
         st.session_state.graph.remove_edge(from_node_id, to_node_id)
@@ -221,21 +238,22 @@ def main():
     # SUBGRAPH SECTION
     st.markdown("## Visualization")
 
-    # Initialize selected clusters state variable if not set
-    if "selected_clusters" not in st.session_state:
-        st.session_state.selected_clusters = []
-
     # Multiselect widget to select clusters for subgraph generation
-    graphcols = st.columns([2, 1, 1, 1])
-    selected_clusters = graphcols[0].multiselect("Select Clusters", st.session_state.graph.get_cluster_ids(), default=st.session_state.selected_clusters, key="clusters_select")
-    st.session_state.selected_clusters = selected_clusters
+    subgraph_cols = st.columns([2, 1, 1, 1])
+
+    st.session_state.subgraph_cluster_ids = subgraph_cols[0].multiselect("Select Clusters", st.session_state.graph.get_cluster_ids(), default=st.session_state.subgraph_cluster_ids, key="select_clusters")
+
+    subgraph_node_ids = []
+    for cluster_id in st.session_state.subgraph_cluster_ids:
+        for rank_id in st.session_state.graph.get_cluster_rank_ids(cluster_id):
+            subgraph_node_ids += st.session_state.graph.get_cluster_rank_node_ids(cluster_id, rank_id)
 
     # Generate a subgraph based on selected clusters
-    st.session_state.subgraph = st.session_state.graph.get_subgraph_clusters(selected_clusters)
+    subgraph = st.session_state.graph.get_subgraph(subgraph_node_ids)
 
     # Layout radio buttons to select graph layout direction
     rankdir_lr = False
-    if graphcols[1].radio("Layout", ["Top/Bottom", "Left/Right"]) == "Left/Right":
+    if subgraph_cols[1].radio("Layout", ["Top/Bottom", "Left/Right"]) == "Left/Right":
         rankdir_lr = True
 
     # Specify cluster and rank colors
@@ -245,8 +263,8 @@ def main():
     rank_fontcolor_val = "black"
 
     # Add option to hide cluster or rank
-    hide_cluster = graphcols[2].checkbox("Hide Cluster Background", value=auto_cluster)
-    hide_rank = graphcols[3].checkbox("Hide Rank Background", value=auto_rank)
+    hide_cluster = subgraph_cols[2].checkbox("Hide Cluster Background", value=auto_cluster)
+    hide_rank = subgraph_cols[3].checkbox("Hide Rank Background", value=auto_rank)
 
     if hide_cluster:
         cluster_fillcolor_val = "white"
@@ -286,24 +304,30 @@ def main():
         
 
     # Display the subgraph diagram if there are selected clusters
-    if len(selected_clusters) > 0:
-        st.graphviz_chart(st.session_state.graph.build_digraph(digraph=st.session_state.subgraph, 
-                                                               cluster_fillcolor=cluster_fillcolor,
-                                                               cluster_fontcolor=cluster_fontcolor,
-                                                               rank_fillcolor=rank_fillcolor,
-                                                               rank_fontcolor=rank_fontcolor,
-                                                               words_per_node=words_per_node, words_per_node_line=words_per_node_line,
-                                                               rankdir_lr=rankdir_lr))
+    if len(subgraph_node_ids) > 0:
+        st.graphviz_chart(st.session_state.graph.build_digraph(graph=subgraph,
+                            cluster_fillcolor=cluster_fillcolor,
+                            cluster_fontcolor=cluster_fontcolor,
+                            rank_fillcolor=rank_fillcolor,
+                            rank_fontcolor=rank_fontcolor,
+                            words_per_node=words_per_node, 
+                            words_per_node_line=words_per_node_line,
+                            rankdir_lr=rankdir_lr))
+        
+
+    # Add under the subgraphs section
+    st.markdown("---")
 
     # Make columns for subgraph JSON
     json_cols = st.columns(2)
+
     # Display the subgraph JSON
     json_cols[0].markdown("## JSON")
-    json_cols[0].json(st.session_state.subgraph, expanded=True)
+    json_cols[0].json(subgraph, expanded=True)
 
     # Offer download buttons for the subgraph JSON and full graph JSON
     json_cols[1].markdown("## Download")
-    json_cols[1].download_button("Download Subgraph JSON", json.dumps(st.session_state.subgraph), "subgraph.json")
+    json_cols[1].download_button("Download Subgraph JSON", json.dumps(subgraph), "subgraph.json")
     json_cols[1].download_button("Download Graph JSON", json.dumps(st.session_state.graph.graph), "graph.json")
 
     # Add links to relevant web pages in sidebar 
