@@ -210,6 +210,7 @@ def main():
                 st.session_state.graph.add_node(node_attr=node_attr)
         else:
             if node_col.button("Edit", key="edit_node"):
+                st.session_state.graph.remove_node(node_id)
                 st.session_state.graph.add_node(node_id=node_id, node_attr=node_attr)
 
             if node_col.button("Remove", key="remove_node"):
