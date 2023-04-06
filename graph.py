@@ -240,7 +240,7 @@ class Graph():
         if graph is not None:
             return graph
         
-    def remove_rank_edge(self, from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, graph=None):
+    def remove_cluster_rank_edge(self, from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, graph=None):
         # Removes an edge between ranks with IDs(cluster_from_id, rank_from_id) and IDs(cluster_to_id, rank_to_id)
         for from_node_id, to_node_id in self.get_cluster_rank_node_product(from_cluster_id, 
                                                                  from_rank_id, 
