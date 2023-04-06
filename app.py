@@ -301,7 +301,10 @@ def main():
     # Multiselect widget to select clusters for subgraph generation
     subgraph_cols = st.columns([2, 1, 1])
 
-    st.session_state.subgraph_cluster_ids = subgraph_cols[0].multiselect("Select Clusters", st.session_state.graph.get_cluster_ids(), default=st.session_state.subgraph_cluster_ids, key="select_clusters")
+    st.session_state.subgraph_cluster_ids = subgraph_cols[0].multiselect("Select Clusters", 
+                                                                         st.session_state.graph.get_cluster_ids(), 
+                                                                         default=st.session_state.subgraph_cluster_ids, 
+                                                                         key="select_clusters")
 
     subgraph_node_ids = []
     for cluster_id in st.session_state.subgraph_cluster_ids:
