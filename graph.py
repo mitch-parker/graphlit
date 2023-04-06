@@ -1,5 +1,6 @@
 from graphviz import Digraph
 from copy import deepcopy
+import itertools
 import random
 
 class Graph():
@@ -18,7 +19,7 @@ class Graph():
         self.style_attr = "style"
         self.label_attr = "label"
         self.color_attr = "color"
-        self.edge_sep = " -> "
+        self.edge_sep = "->"
 
         # Graph structure
         self.graph = {self.clusters_key: clusters, self.nodes_key: nodes, self.edges_key: edges}
@@ -41,26 +42,43 @@ class Graph():
             graph = self.graph
         return graph[self.edges_key]
     
+    def get_cluster_by_id(self, cluster_id, graph=None):
+        # Returns cluster by ID(cluster_id)
+        return self.get_clusters(graph=graph)[cluster_id]
+    
+    def get_node_by_id(self, node_id, graph=None):
+        # Returns node by ID(node_id)
+        return self.get_nodes(graph=graph)[node_id]
+
+    def get_edge_by_id(self, from_node_id, to_node_id, graph=None):
+        # Returns edge by ID(from_node_id) and ID(to_node_id)
+        edge_id = self.join_edge_id(from_node_id, to_node_id)
+        return self.get_edges(graph=graph)[edge_id]
+    
     def is_node_attr(self, node_id, attr_key, graph=None):
         # Returns boolean indicating if an attribute(attr_key) belongs to the node with ID(node_id)
-        return attr_key in list(self.get_nodes(graph=graph)[node_id].keys())
+        return attr_key in list(self.get_node_by_id(node_id, graph=graph).keys())
 
     def get_node_attr(self, node_id, attr_key, graph=None):
         # Returns the value of the attribute(attr_key) for the node with ID(node_id)
-        return self.get_nodes(graph=graph)[node_id][attr_key]
+        return self.get_node_by_id(node_id, graph=graph)[attr_key]
+    
+    def is_edge_attr(self, from_node_id, to_node_id, attr_key, graph=None):
+        # Returns boolean indicating if an attribute(attr_key) belongs to thedge with ID(from_node_id) and ID(to_node_id)
+        return attr_key in list(self.get_edge_by_id(from_node_id, to_node_id, graph=graph).keys())
 
+    def get_edge_attr(self, from_node_id, to_node_id, attr_key, graph=None):
+        # Returns the value of the attribute(attr_key) for the edge with ID(from_node_id) and ID(to_node_id)
+        return self.get_edge_by_id(from_node_id, to_node_id, graph=graph)[attr_key]
+    
     def get_cluster_ids(self, graph=None):
         # Returns list of clusters
         return list(self.get_clusters(graph=graph).keys())
 
-    def get_cluster_rank_ids(self, cluster, graph=None):
-        # Returns list of ranks for a given cluster
-        return list(self.get_clusters(graph=graph)[cluster].keys())
-
-    def get_cluster_rank_node_ids(self, cluster, rank, graph=None):
-        # Returns list of node IDs for given cluster and rank
-        return list(self.get_clusters(graph=graph)[cluster][rank])
-
+    def get_cluster_rank_ids(self, cluster_id, graph=None):
+        # Returns list of ranks for a given cluster ID(cluster_id)
+        return list(self.get_cluster_by_id(cluster_id, graph=graph).keys())
+    
     def get_node_ids(self, graph=None):
         # Returns list of node IDs
         return list(self.get_nodes(graph=graph).keys())
@@ -69,17 +87,36 @@ class Graph():
         # Returns list of edge IDs
         return list(self.get_edges(graph=graph).keys())
     
-    def join_edge_id(self, from_id, to_id):
-        # Returns an edge IDs(edge ID) from IDs(from_id) and IDs(to_id)
-        return f"{from_id}{self.edge_sep}{to_id}"
+    def get_cluster_node_ids(self, cluster_id, graph=None):
+        # Returns list of node IDs for a given cluster ID(cluster_id)
+        node_ids = []
+        for rank_id in self.get_cluster_rank_ids(cluster_id, graph=graph):
+            node_ids += self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph)
+        return node_ids
+    
+    def get_cluster_rank_node_ids(self, cluster_id, rank_id, graph=None):
+        # Returns rank by ID(cluster_id) and ID(rank_id)
+        return self.get_cluster_by_id(cluster_id, graph=graph)[rank_id]
+    
+    def join_edge_id(self, from_node_id, to_node_id):
+        # Returns an edge ID(edge ID) and ID(to_node_id)
+        return f"{from_node_id}{self.edge_sep}{to_node_id}"
 
     def split_edge_id(self, edge_id):
-        # Returns IDs(from_id) and IDs(to_id) from an edge IDs(edge ID)
-        from_id = edge_id.split(self.edge_sep)[0]
-        to_id = edge_id.split(self.edge_sep)[1]
-        return from_id, to_id
+        # Returns ID(from_node_id) and ID(to_node_id) from an edge ID(edge ID)
+        from_node_id = edge_id.split(self.edge_sep)[0]
+        to_node_id = edge_id.split(self.edge_sep)[1]
+        return from_node_id, to_node_id
+    
+    def join_node_product(self, node_product):
+        # Returns a list edge IDs(edge_id) for a given node product(node_product)
+        return [self.join_edge_id(from_node_id, to_node_id) for from_node_id, to_node_id in node_product]
 
     def add_node(self, node_attr, node_id=None, graph=None):
+
+        # Specify graph is it is not given
+        if graph is None:
+            graph = self.graph
 
         ### Generate random node ID(node_id) if none is provided
         if node_id == None:
@@ -88,78 +125,153 @@ class Graph():
                 node_id = str(random.randint(0, len(self.get_node_ids(graph=graph))+1))
 
         # Adds a node with ID(node_id) and attributes(node_attr) to the graph
-        self.get_nodes(graph=graph)[node_id] = node_attr
+        graph[self.nodes_key][node_id] = node_attr
 
         cluster_id = self.get_node_attr(node_id, self.cluster_attr, graph=graph)
         rank_id = self.get_node_attr(node_id, self.rank_attr, graph=graph)
 
         # Add node to the corresponding cluster and rank
         if cluster_id not in self.get_cluster_ids(graph=graph):
-            self.get_clusters(graph=graph)[cluster_id] = {}
+            graph[self.clusters_key][cluster_id] = {}
         if rank_id not in self.get_cluster_rank_ids(cluster_id, graph=graph):
-            self.get_clusters(graph=graph)[cluster_id][rank_id] = []
+            graph[self.clusters_key][cluster_id][rank_id] = []
 
         if node_id not in self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph):
-            self.get_clusters(graph=graph)[cluster_id][rank_id] += [node_id]
+            graph[self.clusters_key][cluster_id][rank_id] += [node_id]
 
         if graph is not None:
             return graph
 
     def remove_node(self, node_id, graph=None):
+
+        # Specify graph is it is not given
+        if graph is None:
+            graph = self.graph
+
         # Removes a node with ID(node_id) from the graph
         cluster_id = self.get_node_attr(node_id, self.cluster_attr, graph=graph)
         rank_id = self.get_node_attr(node_id, self.rank_attr, graph=graph)
 
         if node_id in self.get_node_ids(graph=graph):
-            del self.get_nodes(graph=graph)[node_id]
+            del graph[self.nodes_key][node_id]
 
             # Remove node from its corresponding cluster and rank
             if cluster_id in self.get_cluster_ids(graph=graph):
                 cluster_rank_ids = self.get_cluster_rank_ids(cluster_id, graph=graph)
                 if rank_id in cluster_rank_ids:
                     cluster_rank_node_ids = self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph)
-                    self.get_clusters(graph=graph)[cluster_id][rank_id] = [n for n in cluster_rank_node_ids if n != node_id]
+                    graph[self.clusters_key][cluster_id][rank_id] = [n for n in cluster_rank_node_ids if n != node_id]
                     if len(cluster_rank_node_ids) == 1:
-                        del self.get_clusters(graph=graph)[cluster_id][rank_id]
+                        del graph[self.clusters_key][cluster_id][rank_id]
                         if len(cluster_rank_ids) == 1:
-                            del self.get_clusters(graph=graph)[cluster_id]
+                            del graph[self.clusters_key][cluster_id]
 
             # Remove edges connected to the node
             for edge_id in self.get_edge_ids(graph=graph):
-                from_id, to_id = self.split_edge_id(edge_id)
-                if node_id in [from_id, to_id]:
-                    graph = self.remove_edge(from_id, to_id, graph=graph)
+                from_node_id, to_node_id = self.split_edge_id(edge_id)
+                if node_id in [from_node_id, to_node_id]:
+                    graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
 
         if graph is not None:
             return graph
 
-    def add_edge(self, from_id, to_id, edge_attr={}, graph=None):
-        # Adds an edge between nodes with IDs(from_id) and IDs(to_id)
-        self.get_edges(graph=graph)[self.join_edge_id(from_id, to_id)] = edge_attr
+    def add_node_edge(self, from_node_id, to_node_id, edge_attr={}, graph=None):
+
+        # Specify graph is it is not given
+        if graph is None:
+            graph = self.graph
+
+        # Adds an edge between nodes with IDs(from_node_id) and IDs(to_node_id)
+        graph[self.edges_key][self.join_edge_id(from_node_id, to_node_id)] = edge_attr
 
         if graph is not None:
             return graph
 
-    def remove_edge(self, from_id, to_id, graph=None):
-        # Removes an edge between nodes with IDs(from_id) and IDs(to_id)
-        edge_id = self.join_edge_id(from_id, to_id)
+
+    def remove_node_edge(self, from_node_id, to_node_id, graph=None):
+        # Specify graph is it is not given
+        if graph is None:
+            graph = self.graph
+
+        # Removes an edge between nodes with IDs(from_node_id) and IDs(to_node_id)
+        edge_id = self.join_edge_id(from_node_id, to_node_id)
         if edge_id in self.get_edge_ids(graph=graph):
-            del self.get_edges(graph=graph)[edge_id]
+            del graph[self.edges_key][edge_id]
 
         if graph is not None:
             return graph
+        
+    def get_cluster_node_product(self, from_cluster_id, to_cluster_id, edge_id_format=False, graph=None):
+        # Get all possible combinations of edges between clusters with ID(cluster_from_id) and ID(cluster_to_id)
+        cluster_node_product = list(itertools.product(self.get_cluster_node_ids(from_cluster_id, graph=graph), 
+                                      self.get_cluster_node_ids(to_cluster_id, graph=graph)))
+        if edge_id_format:
+            cluster_node_product = self.join_node_product(cluster_node_product)
+        return cluster_node_product
+        
+    def get_cluster_rank_node_product(self, from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, edge_id_format=False, graph=None):
+        # Get all possible combinations of edges between ranks with IDs(cluster_from_id, rank_from_id) and IDs(cluster_to_id, rank_to_id)
 
-    def get_subgraph(self, subgraph_node_ids):
+        cluster_rank_node_product =  list(itertools.product(self.get_cluster_rank_node_ids(from_cluster_id, from_rank_id, graph=graph), 
+                                      self.get_cluster_rank_node_ids(to_cluster_id, to_rank_id, graph=graph)))
+        if edge_id_format:
+            cluster_rank_node_product  = self.join_node_product(cluster_rank_node_product)
+        return cluster_rank_node_product 
+          
+    def add_cluster_rank_edge(self, from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, edge_attr=None, graph=None):
+
+        # Adds an edge between ranks with IDs(cluster_from_id, rank_from_id) and IDs(cluster_to_id, rank_to_id)
+        for from_node_id, to_node_id in self.get_cluster_rank_node_product(from_cluster_id, 
+                                                                 from_rank_id, 
+                                                                 to_cluster_id, 
+                                                                 to_rank_id, 
+                                                                 graph=graph):
+            graph = self.add_node_edge(from_node_id, to_node_id, edge_attr=edge_attr, graph=graph)
+        if graph is not None:
+            return graph
+
+    def add_cluster_edge(self, from_cluster_id, to_cluster_id, edge_attr=None, graph=None):
+
+        # Adds an edge between clusters with ID(cluster_from_id) and ID(cluster_to_id)
+        for from_node_id, to_node_id in self.get_cluster_node_product(from_cluster_id, 
+                                                                 to_cluster_id, 
+                                                                 graph=graph):
+            graph = self.add_node_edge(from_node_id, to_node_id, edge_attr=edge_attr, graph=graph)
+        if graph is not None:
+            return graph
+        
+    def remove_rank_edge(self, from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, graph=None):
+        # Removes an edge between ranks with IDs(cluster_from_id, rank_from_id) and IDs(cluster_to_id, rank_to_id)
+        for from_node_id, to_node_id in self.get_cluster_rank_node_product(from_cluster_id, 
+                                                                 from_rank_id, 
+                                                                 to_cluster_id, 
+                                                                 to_rank_id, 
+                                                                 graph=graph):
+            graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
+        if graph is not None:
+            return graph
+
+
+    def remove_cluster_edge(self, from_cluster_id, to_cluster_id, graph=None):
+        # Removes an edge between clusters with ID(cluster_from_id) and ID(cluster_to_id)
+        for from_node_id, to_node_id in self.get_cluster_node_product(from_cluster_id, 
+                                                            to_cluster_id, 
+                                                            graph=graph):
+            graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
+        if graph is not None:
+            return graph
+
+    def get_subgraph(self, subgraph_node_ids, graph=None):
         # Returns a subgraph containing only the specified subgraph_node_ids
 
         subgraph = {self.clusters_key: {}, self.nodes_key: {}, self.edges_key: {}}
 
+        if graph is None:
+            graph = self.graph
+
         if len(subgraph_node_ids) > 0:
-            subgraph = {self.clusters_key: deepcopy(self.get_clusters()), 
-                        self.nodes_key: deepcopy(self.get_nodes()), 
-                        self.edges_key: deepcopy(self.get_edges())}
-            subgraph = deepcopy(self.graph)
-            for node_id in self.get_node_ids():
+            subgraph = deepcopy(graph)
+            for node_id in self.get_node_ids(graph=graph):
                 if node_id not in subgraph_node_ids:
                     subgraph = self.remove_node(node_id, graph=subgraph)
 
@@ -186,6 +298,7 @@ class Graph():
                       rank_fillcolor='white', rank_fontcolor='black', 
                       node_fillcolor='black', node_fontcolor='white', 
                       node_shape='box', node_style='rounded,filled',
+                      edge_label='', edge_color='black',
                       rankdir_lr=True, words_per_node=5, words_per_node_line=3):
         # Builds a Digraph object from the graph
         dot = Digraph()
@@ -217,11 +330,11 @@ class Graph():
                                          self.shape_attr: node_shape,
                                          self.style_attr: node_style}
                             
-                            for attr in list(node_attr.keys()):
-                                if self.is_node_attr(node_id, attr, graph=graph):
-                                    node_attr[attr] = self.get_node_attr(node_id, attr, graph=graph)
+                            for attr_key in list(node_attr.keys()):
+                                if self.is_node_attr(node_id, attr_key, graph=graph):
+                                    node_attr[attr_key] = self.get_node_attr(node_id, attr_key, graph=graph)
 
-                            rank_sub.node(node_id, f"{self.prep_text(self.get_nodes(graph=graph)[node_id][self.text_attr], words_per_text_line=words_per_node_line, words_per_text=words_per_node)}\n(ID: {node_id})", 
+                            rank_sub.node(node_id, f"{self.prep_text(self.get_node_attr(node_id, self.text_attr, graph=graph), words_per_text_line=words_per_node_line, words_per_text=words_per_node)}\n(ID: {node_id})", 
                                           style=node_attr[self.style_attr], fillcolor=node_attr[self.fillcolor_attr], 
                                           fontcolor=node_attr[self.fontcolor_attr], shape=node_attr[self.shape_attr], 
                                           penwidth='0', group=cluster_rank_name)
@@ -229,14 +342,12 @@ class Graph():
 
         # Create edges
         for edge_id, edge_attr in self.get_edges(graph=graph).items():
-            from_id, to_id = self.split_edge_id(edge_id)
-            select_attr = [self.label_attr, self.color_attr]
-            present_attr = {}
-            for attr_key in select_attr:
-                attr_val = ""
-                if attr_key in list(edge_attr.keys()):
-                    attr_val = edge_attr[attr_key]
-                present_attr[attr_key] = attr_val
-            dot.edge(from_id, to_id, label=present_attr[self.label_attr], color=present_attr[self.color_attr])
+            from_node_id, to_node_id = self.split_edge_id(edge_id)
+            edge_attr = {self.label_attr: edge_label,
+                         self.color_attr: edge_color} 
+            for attr_key in list(edge_attr.keys()):
+                if self.is_edge_attr(from_node_id, to_node_id, attr_key, graph=graph):
+                    edge_attr[attr_key] = self.get_edge_attr(from_node_id, to_node_id, attr_key, graph=graph)
+            dot.edge(from_node_id, to_node_id, label=edge_attr[self.label_attr], color=edge_attr[self.color_attr])
 
         return dot

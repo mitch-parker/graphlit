@@ -53,9 +53,9 @@ Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users
     ...
   },
   "edges": {
-    "1 -> 2": {},
-    "1 -> 3": {},
-    "2 -> 4": {},
+    "1->2": {},
+    "1->3": {},
+    "2->4": {},
     ...
   }
 }

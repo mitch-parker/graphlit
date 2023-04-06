@@ -1,7 +1,6 @@
 import streamlit as st
 import json
 import webbrowser
-from copy import deepcopy
 from PIL import Image
 from graph import Graph
 
@@ -47,14 +46,14 @@ def main():
     if "graph" not in st.session_state:
         st.session_state.graph = Graph()
     if "subgraph_cluster_ids" not in st.session_state:
-        st.session_state.subgraph_cluster_ids= []
+        st.session_state.subgraph_cluster_ids = []
 
     # Add option to clear graph and load example
     clear_example_cols = st.sidebar.columns(2)
     clear_example_cols[0].markdown("## Reset")
     if clear_example_cols[0].button("Clear Graph"):
         st.session_state.graph = Graph()
-        st.session_state.subgraph_cluster_ids= []
+        st.session_state.subgraph_cluster_ids = []
 
     clear_example_cols[1].markdown("## Example")  
     if clear_example_cols[1].button("Load Graph", key="load_example"):  
@@ -69,10 +68,11 @@ def main():
                                         "4": {"cluster": "Cluster 2", "rank": "Rank 3", "text": "Node 4"},
                                     },
                                     edges={
-                                        "1 -> 2": {},
-                                        "1 -> 3": {},
-                                        "2 -> 4": {},
+                                        "1->2": {},
+                                        "1->3": {},
+                                        "2->4": {},
                                     })
+        st.session_state.subgraph_cluster_ids = []
 
     # Allow user to upload a JSON file
     st.sidebar.markdown("## Upload")
@@ -85,15 +85,19 @@ def main():
             st.session_state.graph = Graph(clusters=uploaded_json["clusters"],
                                            nodes=uploaded_json["nodes"],
                                            edges=uploaded_json["edges"])
+            st.session_state.subgraph_cluster_ids = []
+            
+    # Determine if graph already has nodes, which will inform the layout
+    graph_has_nodes = len(st.session_state.graph.get_node_ids()) > 0
 
     # Create layout columns for the app
-    node_col, edge_col = st.columns([2, 1])
+    if graph_has_nodes:
+        node_col, edge_col = st.columns([2, 1])
+    else:
+        node_col = st
 
     # NODES PANEL
     node_col.markdown("## Nodes")
-
-    # Determine if graph already has nodes, which will inform the layout
-    graph_has_nodes = len(st.session_state.graph.get_node_ids()) > 0
 
     # Determine if user want to automatically cluster or rank all nodes together, which will inform layout
     top_fix = 0
@@ -110,7 +114,7 @@ def main():
     bottom_fix = 0
     add_mode = True
     if graph_has_nodes:
-        if top_node_subcols[0].radio("Options", ["Add", "Edit/Remove"]) == "Edit/Remove":
+        if top_node_subcols[0].radio("Options", ["Add", "Edit/Remove"], horizontal=True) == "Edit/Remove":
             total_bottom += 1
             bottom_fix += 1
             add_mode = False
@@ -130,15 +134,24 @@ def main():
 
     # Configure input fields for node ID, cluster, rank, and text
     if not add_mode:
-        node_id = bottom_node_subcols[0].selectbox("ID", st.session_state.graph.get_node_ids(), key="node_id")
+        node_id = bottom_node_subcols[0].selectbox("Node", st.session_state.graph.get_node_ids(), key="node_id")
 
     node_attr_keys = [st.session_state.graph.cluster_attr, st.session_state.graph.rank_attr,
                   st.session_state.graph.text_attr, st.session_state.graph.fillcolor_attr,
                   st.session_state.graph.fontcolor_attr, st.session_state.graph.shape_attr,
                   st.session_state.graph.style_attr]
+    
+    node_optionals = {st.session_state.graph.fillcolor_attr: "black",
+                      st.session_state.graph.fontcolor_attr: "white",
+                      st.session_state.graph.shape_attr: "box",
+                      st.session_state.graph.style_attr: "rounded,filled",
+                      }
     node_values = {}
     for attr_key in node_attr_keys:
-        node_val = ""
+        if attr_key in list(node_optionals.keys()):
+            node_val = node_optionals[attr_key]
+        else:
+            node_val = ""
         if not add_mode:
             if st.session_state.graph.is_node_attr(node_id, attr_key):
                 node_val = st.session_state.graph.get_node_attr(node_id, attr_key)
@@ -181,12 +194,12 @@ def main():
         
         st.markdown("See [Graphviz](https://graphviz.org) for details.")
         
-        for node_attr, node_val in {st.session_state.graph.fillcolor_attr: node_fillcolor,
+        for attr_key, attr_val in {st.session_state.graph.fillcolor_attr: node_fillcolor,
                           st.session_state.graph.fontcolor_attr: node_fontcolor,
                           st.session_state.graph.shape_attr: node_shape,
                           st.session_state.graph.style_attr: node_style}.items():
-            if node_val != "":
-                node_attr.update({node_attr: node_val})
+            if attr_val not in ["", node_optionals[attr_key]]:
+                node_attr.update({attr_key: attr_val})
 
     # Create buttons to add, edit, and remove nodes
     if len([x for x in [node_cluster, node_rank, node_text] if x == ""]) != 0:
@@ -202,35 +215,82 @@ def main():
             if node_col.button("Remove", key="remove_node"):
                 st.session_state.graph.remove_node(node_id)
 
-    # EDGES PANEL
-    edge_col.markdown("## Edges")
+    # If graph has node add edges panel
+    if graph_has_nodes:
 
-    # Create layout columns for the edge configuration input fields
-    edge_subcols = edge_col.columns(2)
-
-    # Configure input fields for start and end nodes of edges
-    from_node_id = edge_subcols[0].selectbox("From ID", st.session_state.graph.get_node_ids(), key="from_node_id")
-    to_node_id = edge_subcols[1].selectbox("To ID", st.session_state.graph.get_node_ids(), key="to_node_id")
-
-    edge_attr = {}
-    with edge_col.expander("Optional Input"):
-        edge_label = st.text_input("Label", 
-                                  key="edge_label")
-        if edge_label != "":
-            edge_attr[st.session_state.graph.label_attr] = edge_label
-        edge_color = st.text_input("Color", 
-                                  key="edge_color")
-        if edge_color != "":
-            edge_attr[st.session_state.graph.color_attr] = edge_color
+        # EDGES PANEL
+        edge_col.markdown("## Edges")
         
-        st.markdown("See [Graphviz](https://graphviz.org) for details.")
+        # Specify edge type
+        edge_level_options = ["Cluster", "Rank", "Node"]
+        if auto_cluster:
+            edge_level_options.remove("Cluster")
+        if auto_rank:
+            edge_level_options.remove("Rank")
+        if len(edge_level_options) == 1:
+            edge_level = "Node"
+        else:
+            edge_level = edge_col.radio("Level", edge_level_options, index=len(edge_level_options)-1, horizontal=True, key="edge_level")
 
-    # Create buttons to add and remove edges
-    if edge_col.button("Add", key="add_edge"):
-        st.session_state.graph.add_edge(from_node_id, to_node_id, edge_attr=edge_attr)
+        # Create layout columns for the edge configuration input fields
+        edge_subcols = edge_col.columns(3)
 
-    if edge_col.button("Remove", key="remove_edge"):
-        st.session_state.graph.remove_edge(from_node_id, to_node_id)
+        # Configure input fields for start and end nodes of edges
+        if edge_level=="Cluster" or edge_level=="Rank":
+            from_cluster_id = edge_subcols[0].selectbox("From Cluster", st.session_state.graph.get_cluster_ids(), key="from_cluster_id")
+            to_cluster_id = edge_subcols[1].selectbox("To Cluster", st.session_state.graph.get_cluster_ids(), key="to_cluster_id")
+            if edge_level == "Rank":
+                from_rank_id = edge_subcols[0].selectbox("From Rank", st.session_state.graph.get_cluster_rank_ids(from_cluster_id), key="from_rank_id")
+                to_rank_id = edge_subcols[1].selectbox("To Rank", st.session_state.graph.get_cluster_rank_ids(to_cluster_id), key="to_rank_id")
+        elif edge_level == "Node":    
+            from_node_id = edge_subcols[0].selectbox("From Node", st.session_state.graph.get_node_ids(), key="from_node_id")
+            to_node_id = edge_subcols[1].selectbox("To Node", st.session_state.graph.get_node_ids(), key="to_node_id")
+
+        edge_attr_keys = [st.session_state.graph.label_attr, st.session_state.graph.color_attr]
+        edge_optionals = {st.session_state.graph.label_attr:"",
+                        st.session_state.graph.color_attr:"black"}
+        edge_values = {}
+        for attr_key in edge_attr_keys:
+            if attr_key in list(edge_optionals.keys()):
+                edge_val = edge_optionals[attr_key]
+            else:
+                edge_val = ""
+            if edge_level == "Node":
+                if st.session_state.graph.join_edge_id(from_node_id, to_node_id) in st.session_state.graph.get_edge_ids():
+                    if st.session_state.graph.is_edge_attr(from_node_id, to_node_id, attr_key):
+                        edge_val = st.session_state.graph.get_edge_attr(from_node_id, to_node_id, attr_key)
+            edge_values[attr_key] = edge_val
+
+        edge_attr = {}
+        with edge_col.expander("Optional Input"):
+            edge_label = st.text_input("Label", value=edge_values[st.session_state.graph.label_attr],
+                                    key="edge_label")
+            edge_color = st.text_input("Color", value=edge_values[st.session_state.graph.color_attr],
+                                    key="edge_color")
+            
+            st.markdown("See [Graphviz](https://graphviz.org) for details.")
+
+            for attr_key, attr_val in {st.session_state.graph.label_attr: edge_label,
+                            st.session_state.graph.color_attr: edge_color}.items():
+                if attr_val not in ["", edge_optionals[attr_key]]:
+                    edge_attr.update({attr_key: attr_val})
+
+        # Create buttons to add and remove edges
+        if edge_col.button("Add/Edit", key="add_node_edge"):
+            if edge_level == "Cluster":
+                st.session_state.graph.add_cluster_edge(from_cluster_id, to_cluster_id, edge_attr=edge_attr)
+            elif edge_level == "Rank":
+                st.session_state.graph.add_cluster_rank_edge(from_cluster_id, from_rank_id, to_cluster_id, to_rank_id, edge_attr=edge_attr)
+            elif edge_level == "Node":
+                st.session_state.graph.add_node_edge(from_node_id, to_node_id, edge_attr=edge_attr)
+
+        if edge_col.button("Remove", key="remove_node_edge"):
+            if edge_level == "Cluster":
+                st.session_state.graph.remove_cluster_edge(from_cluster_id, to_cluster_id)
+            elif edge_level == "Rank":
+                st.session_state.graph.remove_cluster_rank_edge(from_cluster_id, from_rank_id, to_cluster_id, to_rank_id)
+            elif edge_level == "Node":
+                st.session_state.graph.remove_node_edge(from_node_id, to_node_id)
 
     # Add a divider before subgraph section
     st.markdown("---")
@@ -239,7 +299,7 @@ def main():
     st.markdown("## Visualization")
 
     # Multiselect widget to select clusters for subgraph generation
-    subgraph_cols = st.columns([2, 1, 1, 1])
+    subgraph_cols = st.columns([2, 1, 1])
 
     st.session_state.subgraph_cluster_ids = subgraph_cols[0].multiselect("Select Clusters", st.session_state.graph.get_cluster_ids(), default=st.session_state.subgraph_cluster_ids, key="select_clusters")
 
@@ -253,7 +313,7 @@ def main():
 
     # Layout radio buttons to select graph layout direction
     rankdir_lr = False
-    if subgraph_cols[1].radio("Layout", ["Top/Bottom", "Left/Right"]) == "Left/Right":
+    if subgraph_cols[1].radio("Layout", ["Top/Bottom", "Left/Right"], horizontal=True) == "Left/Right":
         rankdir_lr = True
 
     # Specify cluster and rank colors
@@ -264,7 +324,7 @@ def main():
 
     # Add option to hide cluster or rank
     hide_cluster = subgraph_cols[2].checkbox("Hide Cluster Background", value=auto_cluster)
-    hide_rank = subgraph_cols[3].checkbox("Hide Rank Background", value=auto_rank)
+    hide_rank = subgraph_cols[2].checkbox("Hide Rank Background", value=auto_rank)
 
     if hide_cluster:
         cluster_fillcolor_val = "white"
@@ -350,7 +410,6 @@ def main():
     # Put app closer
     st.markdown("---")
     st.markdown("Copyright (c) 2023 Mitchell Isaac Parker")
-
 
 # Run the main function
 if __name__ == "__main__":
