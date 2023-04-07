@@ -369,15 +369,14 @@ def main():
 
     # Display the subgraph diagram if there are selected clusters
     if len(subgraph_node_ids) > 0:
-        if st.button("Update Visualization"):
-            st.graphviz_chart(st.session_state.graph.build_digraph(graph=subgraph,
-                                cluster_fillcolor=cluster_fillcolor,
-                                cluster_fontcolor=cluster_fontcolor,
-                                rank_fillcolor=rank_fillcolor,
-                                rank_fontcolor=rank_fontcolor,
-                                words_per_node=words_per_node, 
-                                words_per_node_line=words_per_node_line,
-                                rankdir_lr=rankdir_lr))
+        st.graphviz_chart(st.session_state.graph.build_digraph(graph=subgraph,
+                            cluster_fillcolor=cluster_fillcolor,
+                            cluster_fontcolor=cluster_fontcolor,
+                            rank_fillcolor=rank_fillcolor,
+                            rank_fontcolor=rank_fontcolor,
+                            words_per_node=words_per_node, 
+                            words_per_node_line=words_per_node_line,
+                            rankdir_lr=rankdir_lr))
         
 
     # Add under the subgraphs section
