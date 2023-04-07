@@ -142,7 +142,7 @@ class Graph():
         if graph is not None:
             return graph
 
-    def remove_node(self, node_id, graph=None):
+    def remove_node(self, node_id, edit_mode=False, graph=None):
 
         # Specify graph is it is not given
         if graph is None:
@@ -156,21 +156,18 @@ class Graph():
             del graph[self.nodes_key][node_id]
 
             # Remove node from its corresponding cluster and rank
-            if cluster_id in self.get_cluster_ids(graph=graph):
-                cluster_rank_ids = self.get_cluster_rank_ids(cluster_id, graph=graph)
-                if rank_id in cluster_rank_ids:
-                    cluster_rank_node_ids = self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph)
-                    graph[self.clusters_key][cluster_id][rank_id] = [n for n in cluster_rank_node_ids if n != node_id]
-                    if len(cluster_rank_node_ids) == 1:
-                        del graph[self.clusters_key][cluster_id][rank_id]
-                        if len(cluster_rank_ids) == 1:
-                            del graph[self.clusters_key][cluster_id]
+            graph[self.clusters_key][cluster_id][rank_id] = [x for x in self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph) if x != node_id]
+            if len(self.get_cluster_rank_node_ids(cluster_id, rank_id, graph=graph)) == 0:
+                del graph[self.clusters_key][cluster_id][rank_id]
+                if len(self.get_cluster_rank_ids(cluster_id, graph=graph)) == 0:
+                    del graph[self.clusters_key][cluster_id]
 
             # Remove edges connected to the node
-            for edge_id in self.get_edge_ids(graph=graph):
-                from_node_id, to_node_id = self.split_edge_id(edge_id)
-                if node_id in [from_node_id, to_node_id]:
-                    graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
+            if not edit_mode:
+                for edge_id in self.get_edge_ids(graph=graph):
+                    from_node_id, to_node_id = self.split_edge_id(edge_id)
+                    if node_id in [from_node_id, to_node_id]:
+                        graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
 
         if graph is not None:
             return graph
@@ -187,16 +184,13 @@ class Graph():
         if graph is not None:
             return graph
 
-
     def remove_node_edge(self, from_node_id, to_node_id, graph=None):
         # Specify graph is it is not given
         if graph is None:
             graph = self.graph
 
         # Removes an edge between nodes with IDs(from_node_id) and IDs(to_node_id)
-        edge_id = self.join_edge_id(from_node_id, to_node_id)
-        if edge_id in self.get_edge_ids(graph=graph):
-            del graph[self.edges_key][edge_id]
+        del graph[self.edges_key][self.join_edge_id(from_node_id, to_node_id)]
 
         if graph is not None:
             return graph
@@ -247,20 +241,61 @@ class Graph():
                                                                  to_cluster_id, 
                                                                  to_rank_id, 
                                                                  graph=graph):
-            graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
+            if self.join_edge_id(from_node_id, to_node_id) in self.get_edge_ids(graph=graph):
+                graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
         if graph is not None:
             return graph
-
 
     def remove_cluster_edge(self, from_cluster_id, to_cluster_id, graph=None):
         # Removes an edge between clusters with ID(cluster_from_id) and ID(cluster_to_id)
         for from_node_id, to_node_id in self.get_cluster_node_product(from_cluster_id, 
                                                             to_cluster_id, 
                                                             graph=graph):
-            graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
+            if self.join_edge_id(from_node_id, to_node_id) in self.get_edge_ids(graph=graph):
+                graph = self.remove_node_edge(from_node_id, to_node_id, graph=graph)
         if graph is not None:
             return graph
+    
+    def rename_cluster_rank_id(self, old_cluster_id, old_rank_id, new_cluster_id, new_rank_id, graph=None):
+        # Edit rank IDs(from_cluster_id, from_rank_id) to IDs(to_cluster_id, to_rank_id)
+        if graph is None:
+            graph = self.graph
 
+        if new_cluster_id not in self.get_cluster_ids(graph=graph):
+            graph[self.clusters_key][new_cluster_id] = {}
+        if new_rank_id not in self.get_cluster_rank_ids(new_cluster_id, graph=graph):
+            graph[self.clusters_key][new_cluster_id][new_rank_id] = []
+
+        graph[self.clusters_key][new_cluster_id][new_rank_id] += graph[self.clusters_key][old_cluster_id][old_rank_id]
+
+        del graph[self.clusters_key][old_cluster_id][old_rank_id]
+        if len(self.get_cluster_rank_ids(old_cluster_id, graph=graph)) == 0:
+                del graph[self.clusters_key][old_cluster_id]
+
+        for node_id in self.get_cluster_rank_node_ids(new_cluster_id, new_rank_id, graph=graph):
+            graph[self.nodes_key][node_id][self.cluster_attr] = new_cluster_id
+            graph[self.nodes_key][node_id][self.rank_attr] = new_rank_id
+
+        if graph is not None:
+            return graph
+    
+    def rename_cluster_id(self, old_cluster_id, new_cluster_id, graph=None):
+        # Edit cluster ID(old_cluster_id) to ID(new_cluster_id)
+        if graph is None:
+            graph = self.graph
+
+        if new_cluster_id not in self.get_cluster_ids(graph=graph):
+            graph[self.clusters_key][new_cluster_id] = {}
+
+        graph[self.clusters_key][new_cluster_id].update(graph[self.clusters_key][old_cluster_id])
+        del graph[self.clusters_key][old_cluster_id] 
+
+        for node_id in self.get_cluster_node_ids(new_cluster_id, graph=graph):
+            graph[self.nodes_key][node_id][self.cluster_attr] = new_cluster_id
+
+        if graph is not None:
+            return graph
+        
     def get_subgraph(self, subgraph_node_ids, graph=None):
         # Returns a subgraph containing only the specified subgraph_node_ids
 
@@ -276,7 +311,7 @@ class Graph():
                     subgraph = self.remove_node(node_id, graph=subgraph)
 
         return subgraph
-
+        
     def prep_text(self, text, words_per_text=5, words_per_text_line=3):
         # Reformats a text string into chunks of words_per_text_line words, up to words_per_text total
         words = text.split()
