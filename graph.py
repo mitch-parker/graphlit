@@ -298,7 +298,7 @@ class Graph():
                 formatted_words.append('...')
                 break
 
-        return '\n'.join(formatted_words)
+        return "\n".join(formatted_words)
 
     def build_digraph(self, graph=None,
                       cluster_fillcolor='lightgrey', cluster_fontcolor='black', 
@@ -341,7 +341,12 @@ class Graph():
                                 if self.is_node_attr(node_id, attr_key, graph=graph):
                                     node_attr[attr_key] = self.get_node_attr(node_id, attr_key, graph=graph)
 
-                            rank_sub.node(node_id, f"{self.prep_text(self.get_node_attr(node_id, self.text_attr, graph=graph), words_per_text_line=words_per_node_line, words_per_text=words_per_node)}\n(ID: {node_id})", 
+                            node_text = f"{self.prep_text(self.get_node_attr(node_id, self.text_attr, graph=graph), words_per_text_line=words_per_node_line, words_per_text=words_per_node)}"
+                            if len(node_text) > 0:
+                                node_text += "\n"
+                            node_text += f"(ID: {node_id})"
+                            
+                            rank_sub.node(node_id, node_text, 
                                           style=node_attr[self.style_attr], fillcolor=node_attr[self.fillcolor_attr], 
                                           fontcolor=node_attr[self.fontcolor_attr], shape=node_attr[self.shape_attr], 
                                           penwidth='0', group=cluster_rank_name)
