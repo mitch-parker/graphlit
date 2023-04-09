@@ -368,7 +368,7 @@ class Graph():
     def get_edge_adjacency(self, graph=None):
         # Gets edge adjacency list
     
-        edge_adjacency = defaultdict(list)
+        edge_adjacency = {}
 
         for edge_id in self.get_edge_ids(graph=graph):
             from_node_id, to_node_id = self.split_edge_id(edge_id)
@@ -380,49 +380,47 @@ class Graph():
 
         return edge_adjacency
 
-    def breadth_first_search(self, edge_adjacency, node_id, queue, visited, stack):
+    def breadth_first_search(self, edge_adjacency, node_id, visited, stack):
         # Performs breadth-first search
         if node_id not in visited:
             visited.add(node_id)
+            
             for neighbor in edge_adjacency[node_id]:
                 if neighbor not in visited:
                     if node_id not in stack:
                         stack[node_id] = [neighbor]
                     else:
                         stack[node_id].append(neighbor)
-                    queue.append(neighbor)
 
-        return queue, visited, stack
+        return visited, stack
     
     def depth_first_search(self, edge_adjacency, node_id, visited, stack):
         # Performs depth-first search
-        visited.add(node_id)
+        if node_id not in visited:
+            visited.add(node_id)
 
-        for neighbor in edge_adjacency[node_id]:
-            if neighbor not in visited:
-                visited, stack = self.depth_first_search(edge_adjacency, neighbor, visited, stack)
-
-        stack.insert(0, node_id)
+            for neighbor in edge_adjacency[node_id]:
+                if neighbor not in visited:
+                    visited, stack = self.depth_first_search(edge_adjacency, neighbor, visited, stack)
+            stack.insert(0, node_id)
 
         return visited, stack
 
-    def get_sorted_nodes(self, breadth_first=True, graph=None):
-        # If graph is none use class graph
+    def get_sorted_nodes(self, breadth_search=True, graph=None):
+        # Gets sorted nodes via a breadth-first or depth-first search
         if graph is None:
             graph = self.graph
 
         edge_adjacency = self.get_edge_adjacency(graph=graph)
         visited = set()
 
-        if breadth_first:
-            queue = deque([list(edge_adjacency.keys())[0]])
+        if breadth_search:
             stack = {}
-            while queue:
-                queue, visited, stack = self.breadth_first_search(edge_adjacency, queue.popleft(), queue, visited, stack)
+            for node_id in edge_adjacency:
+                visited, stack = self.breadth_first_search(edge_adjacency, node_id, visited, stack)
         else:
             stack = []
             for node_id in edge_adjacency:
-                if node_id not in visited:
-                    visited, stack = self.depth_first_search(edge_adjacency, node_id, visited, stack)
+                visited, stack = self.depth_first_search(edge_adjacency, node_id, visited, stack)
 
         return stack         
