@@ -1,5 +1,6 @@
 from graphviz import Digraph
 from copy import deepcopy
+from collections import defaultdict, deque
 import itertools
 import random
 
@@ -316,21 +317,21 @@ class Graph():
 
         # Create cluster and rank clusters
         for cluster_id, cluster_ranks in self.get_clusters(graph=graph).items():
-            cluster_name = f"cluster_{cluster_id}"
-            with dot.subgraph(name=cluster_name) as sub:
+            cluster_group_name = f"cluster_{cluster_id}"
+            with dot.subgraph(name=cluster_group_name) as sub:
                 sub.attr(label=cluster_id, labeljust='l', 
                          labelloc='t', style='rounded,filled', 
                          fillcolor=cluster_fillcolor, fontcolor=cluster_fontcolor, 
                          margin='10', penwidth='0', 
-                         group=cluster_name)
+                         group=cluster_group_name)
                 for rank_id, rank_node_ids in cluster_ranks.items():
-                    cluster_rank_name = f"cluster_{cluster_id}_{rank_id}"
-                    with sub.subgraph(name=cluster_rank_name) as rank_sub:
+                    cluster_rank_group_name = f"cluster_{cluster_id}_{rank_id}"
+                    with sub.subgraph(name=cluster_rank_group_name) as rank_sub:
                         rank_sub.attr(label=rank_id, labeljust='l', 
                                       labelloc='t', style='rounded,filled', 
                                       fillcolor=rank_fillcolor, fontcolor=rank_fontcolor, 
                                       margin='10', penwidth='0', 
-                                      group=cluster_rank_name)
+                                      group=cluster_rank_group_name)
                         for node_id in rank_node_ids:
                             node_attr = {self.fillcolor_attr: node_fillcolor,
                                          self.fontcolor_attr: node_fontcolor,
@@ -345,11 +346,11 @@ class Graph():
                             if len(node_text) > 0:
                                 node_text += "\n"
                             node_text += f"(ID: {node_id})"
-                            
+
                             rank_sub.node(node_id, node_text, 
                                           style=node_attr[self.style_attr], fillcolor=node_attr[self.fillcolor_attr], 
                                           fontcolor=node_attr[self.fontcolor_attr], shape=node_attr[self.shape_attr], 
-                                          penwidth='0', group=cluster_rank_name)
+                                          penwidth='0', group=cluster_rank_group_name)
                         rank_sub.graph_attr[self.rank_attr] = 'same'
 
         # Create edges
@@ -363,3 +364,65 @@ class Graph():
             dot.edge(from_node_id, to_node_id, label=edge_attr[self.label_attr], color=edge_attr[self.color_attr])
 
         return dot
+
+    def get_edge_adjacency(self, graph=None):
+        # Gets edge adjacency list
+    
+        edge_adjacency = defaultdict(list)
+
+        for edge_id in self.get_edge_ids(graph=graph):
+            from_node_id, to_node_id = self.split_edge_id(edge_id)
+            if from_node_id not in edge_adjacency:
+                edge_adjacency[from_node_id] = []
+            if to_node_id not in edge_adjacency:
+                edge_adjacency[to_node_id] = []
+            edge_adjacency[from_node_id].append(to_node_id)
+
+        return edge_adjacency
+
+    def breadth_first_search(self, edge_adjacency, node_id, queue, visited, stack):
+        # Performs breadth-first search
+        if node_id not in visited:
+            visited.add(node_id)
+            for neighbor in edge_adjacency[node_id]:
+                if neighbor not in visited:
+                    if node_id not in stack:
+                        stack[node_id] = [neighbor]
+                    else:
+                        stack[node_id].append(neighbor)
+                    queue.append(neighbor)
+
+        return queue, visited, stack
+    
+    def depth_first_search(self, edge_adjacency, node_id, visited, stack):
+        # Performs depth-first search
+        visited.add(node_id)
+
+        for neighbor in edge_adjacency[node_id]:
+            if neighbor not in visited:
+                visited, stack = self.depth_first_search(edge_adjacency, neighbor, visited, stack)
+
+        stack.insert(0, node_id)
+
+        return visited, stack
+
+    def get_sorted_nodes(self, breadth_first=True, graph=None):
+        # If graph is none use class graph
+        if graph is None:
+            graph = self.graph
+
+        edge_adjacency = self.get_edge_adjacency(graph=graph)
+        visited = set()
+
+        if breadth_first:
+            queue = deque([list(edge_adjacency.keys())[0]])
+            stack = {}
+            while queue:
+                queue, visited, stack = self.breadth_first_search(edge_adjacency, queue.popleft(), queue, visited, stack)
+        else:
+            stack = []
+            for node_id in edge_adjacency:
+                if node_id not in visited:
+                    visited, stack = self.depth_first_search(edge_adjacency, node_id, visited, stack)
+
+        return stack         
