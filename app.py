@@ -326,33 +326,65 @@ if graph_has_nodes:
 # Expander to rename clusters or ranks
 if graph_has_nodes:
     edge_col.markdown("## Clusters")
-    with edge_col.expander("Rename Input"):
+    with edge_col.expander("Optional Features"):
 
-        rename_level = st.radio("Level", ["Cluster", "Rank"], horizontal=True)
+        clusters_cols = st.columns(2)
 
-        rename_cols = st.columns(2)
+        clusters_options = clusters_cols[0].radio("Options", ["Rename", "Remove"])
+        clusters_level = clusters_cols[1].radio("Level", ["Cluster", "Rank"])
 
-        old_cluster_id = rename_cols[0].selectbox("Old Cluster", st.session_state.graph.get_cluster_ids(), key="old_cluster_id")
-        new_cluster_id = rename_cols[1].text_input("New Cluster", key="new_cluster_id")
+        cluster_label = ""
+        rank_label = ""
 
-        if rename_level == "Rank":
-            old_rank_id = rename_cols[0].selectbox("Old Rank", st.session_state.graph.get_cluster_rank_ids(old_cluster_id), key="old_rank_id")
-            new_rank_id = rename_cols[1].text_input("New Rank", key="new_rank_id")
+        old_cluster_col = clusters_cols[0]
+        cluster_remove_fix = 0
 
-        if new_cluster_id != "":
-            if (rename_level == "Cluster" and old_cluster_id != new_cluster_id) or (rename_level == "Rank" and new_rank_id != "" and old_rank_id != new_rank_id):
-                if st.button("Rename"):
-                    if rename_level == "Cluster":
-                        st.session_state.graph.rename_cluster_id(old_cluster_id, new_cluster_id) 
-                        st.session_state.subgraph_cluster_ids = list(set(map(lambda x: x.replace(old_cluster_id, 
-                                                                                                new_cluster_id), 
-                                                                                                st.session_state.subgraph_cluster_ids)))
-                    else:                                                            
-                        st.session_state.graph.rename_cluster_rank_id(old_cluster_id, old_rank_id, new_cluster_id, new_rank_id)
-                        st.session_state.subgraph_cluster_ids = list(set(map(lambda x: x.replace(old_cluster_id, 
+        if clusters_options == "Remove":
+            cluster_remove_fix += 1
+            if clusters_level == "Cluster":
+                old_cluster_col = st
+        else:
+            cluster_label = "Old "
+            rank_label = "Old "
+        
+        cluster_label += "Cluster"
+        rank_label += "Rank"
+        
+        old_cluster_id = old_cluster_col.selectbox(cluster_label, st.session_state.graph.get_cluster_ids(), key="old_cluster_id")
+        if clusters_options == "Rename":
+            new_cluster_id = clusters_cols[1].text_input("New Cluster", key="new_cluster_id")
+
+        if clusters_level == "Rank":
+            old_rank_id = clusters_cols[0+cluster_remove_fix].selectbox(rank_label, st.session_state.graph.get_cluster_rank_ids(old_cluster_id), key="old_rank_id")
+            if clusters_options == "Rename":
+                new_rank_id = clusters_cols[1].text_input("New Rank", key="new_rank_id")
+
+        if clusters_options == "Remove":
+            if st.button("Remove"):
+                if clusters_level == "Cluster":
+                    st.session_state.graph.remove_nodes(st.session_state.graph.get_cluster_node_ids(old_cluster_id))
+                else:
+                    st.session_state.graph.remove_nodes(st.session_state.graph.get_cluster_rank_node_ids(old_cluster_id, old_rank_id))
+                st.session_state.show_graph = True
+        else:
+            if new_cluster_id != "":
+                if ((clusters_level == "Cluster" and old_cluster_id != new_cluster_id) or 
+                    ((clusters_level == "Rank" and new_rank_id != "") and 
+                    ((old_cluster_id != new_cluster_id and old_rank_id != new_rank_id) or 
+                    (old_cluster_id != new_cluster_id and old_rank_id == new_rank_id) or 
+                    (old_cluster_id == new_cluster_id and old_rank_id != new_rank_id)))):
+                    if st.button("Rename"):
+                        if clusters_level == "Cluster":
+                            st.session_state.graph.rename_cluster_id(old_cluster_id, new_cluster_id) 
+                            st.session_state.subgraph_cluster_ids = list(set(map(lambda x: x.replace(old_cluster_id, 
                                                                                                     new_cluster_id), 
                                                                                                     st.session_state.subgraph_cluster_ids)))
-                    st.session_state.show_graph = True
+                        else:                                                            
+                            st.session_state.graph.rename_cluster_rank_id(old_cluster_id, old_rank_id, new_cluster_id, new_rank_id)
+                            st.session_state.subgraph_cluster_ids = list(set(map(lambda x: x.replace(old_cluster_id, 
+                                                                                                        new_cluster_id), 
+                                                                                                        st.session_state.subgraph_cluster_ids)))
+                        st.session_state.show_graph = True
 
 # Add a divider before subgraph section
 st.markdown("---")
