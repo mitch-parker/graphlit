@@ -44,14 +44,29 @@ if "graph" not in st.session_state:
     st.session_state.graph = Graph()
 if "subgraph_cluster_ids" not in st.session_state:
     st.session_state.subgraph_cluster_ids = []
+
 if "hide_cluster" not in st.session_state:
     st.session_state.hide_cluster = False
 if "hide_rank" not in st.session_state:
     st.session_state.hide_rank = False
 if "rankdir_lr" not in st.session_state:
     st.session_state.rankdir_lr = False
+
+if "cluster_fillcolor" not in st.session_state:
+    st.session_state.cluster_fillcolor = ""
+if "cluster_fontcolor" not in st.session_state:
+    st.session_state.cluster_fontcolor = ""
+if "rank_fillcolor" not in st.session_state:
+    st.session_state.rank_fillcolor = ""
+if "rank_fontcolor" not in st.session_state:
+    st.session_state.rank_fontcolor = ""
+if "words_per_node" not in st.session_state:
+    st.session_state.words_per_node = ""
+if "words_per_node_line" not in st.session_state:
+    st.session_state.words_per_node_line = ""
+
 if "show_graph" not in st.session_state:
-    st.session_state.show_graph = False
+    st.session_state.show_graph = False  
 
 # Add option to clear graph and load example
 clear_example_cols = st.sidebar.columns(2)
@@ -446,11 +461,18 @@ with st.expander("Optional Input"):
             rank_fontcolor = "black"
     else:
         cluster_fillcolor = visual_option_cols[0].text_input("Cluster Fill Color", 
-                                value=cluster_fillcolor, 
-                                key="cluster_fillcolor")
+                                value=cluster_fillcolor)
         cluster_fontcolor = visual_option_cols[1].text_input("Cluster Font Color", 
-                                value=cluster_fontcolor, 
-                                key="cluster_fontcolor")
+                                value=cluster_fontcolor)
+    
+    if cluster_fillcolor != st.session_state.cluster_fillcolor:
+        st.session_state.show_graph = True
+    st.session_state.cluster_fillcolor = cluster_fillcolor
+
+    if cluster_fontcolor != st.session_state.cluster_fontcolor:
+        st.session_state.show_graph = True
+    st.session_state.cluster_fontcolor = cluster_fontcolor
+
     if hide_rank:
         if hide_cluster:
             rank_fillcolor = "white"
@@ -459,26 +481,33 @@ with st.expander("Optional Input"):
             rank_fillcolor = cluster_fillcolor
             rank_fontcolor = cluster_fillcolor
     else:
-        rank_fillcolor = visual_option_cols[0].text_input("Rank Fill Color", 
-                                value=rank_fillcolor, 
-                                key="rank_fillcolor")
-        rank_fontcolor = visual_option_cols[1].text_input("Rank Font Color", 
-                                value=rank_fontcolor, 
-                                key="rank_fontcolor") 
-
-    words_per_node = visual_option_cols[0].number_input("Words Per Node", 
-                            value=5, 
-                            key="words_per_node")
-    words_per_node_line= visual_option_cols[1].number_input("Words Per Node Line", 
-                            value=3, 
-                            key="words_per_node_line")
-    
-    if st.button("Update Visualization"):
+        rank_fillcolor = visual_option_cols[0].text_input("Rank Fill Color", value=rank_fillcolor)
+        rank_fontcolor = visual_option_cols[1].text_input("Rank Font Color", value=rank_fontcolor) 
+        
+    if rank_fillcolor != st.session_state.rank_fillcolor:
         st.session_state.show_graph = True
+    st.session_state.rank_fillcolor = rank_fillcolor
+
+    if rank_fontcolor != st.session_state.rank_fontcolor:
+        st.session_state.show_graph = True
+    st.session_state.rank_fontcolor = rank_fontcolor
+
+    words_per_node = visual_option_cols[0].number_input("Words Per Node", value=5)
+    words_per_node_line= visual_option_cols[1].number_input("Words Per Node Line", value=3)
+    
+    if words_per_node != st.session_state.words_per_node:
+        st.session_state.show_graph = True
+    st.session_state.words_per_node = words_per_node
+
+    if words_per_node_line != st.session_state.words_per_node_line:
+        st.session_state.show_graph = True
+    st.session_state.words_per_node_line = words_per_node_line
 
     st.markdown("See [Graphviz](https://graphviz.org) for details.")
-    
 
+if st.button("Update Visualization", key="update_visual"):
+    st.session_state.show_graph = True
+    
 # Display the subgraph diagram if there are selected clusters
 if len(subgraph_node_ids) > 0 and st.session_state.show_graph:
     st.graphviz_chart(st.session_state.graph.build_digraph(graph=subgraph,
@@ -490,7 +519,6 @@ if len(subgraph_node_ids) > 0 and st.session_state.show_graph:
                         words_per_node_line=words_per_node_line,
                         rankdir_lr=rankdir_lr))
     st.session_state.show_graph = False
-    
 
 # Add under the subgraphs section
 st.markdown("---")

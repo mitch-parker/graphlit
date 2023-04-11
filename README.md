@@ -35,7 +35,13 @@ Graphlit is a Streamlit app for creating, editing, and visualizing graphs. Users
 
 ## Installation
 
-1. Install dependencies: `pip install streamlit graphviz`
+1. Install dependencies: 
+
+```bash
+$ conda create -n graphlit_env python=3.10
+$ conda activate graphlit_env
+$ pip install streamlit graphviz
+```
 
 ## JSON Format
 

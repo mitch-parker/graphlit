@@ -380,9 +380,12 @@ class Graph():
 
         return edge_adjacency
 
-    def breadth_first_search(self, edge_adjacency, node_id, visited, stack):
+    def breadth_first_search(self, node_id, edge_adjacency=None, visited=set(), stack={}, graph=None):
         # Performs breadth-first search
         if node_id not in visited:
+            if edge_adjacency is None:
+                edge_adjacency = self.get_edge_adjacency(graph=graph)
+
             visited.add(node_id)
             
             for neighbor in edge_adjacency[node_id]:
@@ -394,33 +397,99 @@ class Graph():
 
         return visited, stack
     
-    def depth_first_search(self, edge_adjacency, node_id, visited, stack):
+    def depth_first_search(self, node_id, edge_adjacency=None, visited=set(), stack=[], graph=None):
         # Performs depth-first search
         if node_id not in visited:
+            if edge_adjacency is None:
+                edge_adjacency = self.get_edge_adjacency(graph=graph)
+
             visited.add(node_id)
 
             for neighbor in edge_adjacency[node_id]:
                 if neighbor not in visited:
-                    visited, stack = self.depth_first_search(edge_adjacency, neighbor, visited, stack)
+                    visited, stack = self.depth_first_search(neighbor, 
+                                                             edge_adjacency=edge_adjacency, 
+                                                             visited=visited, 
+                                                             stack=stack)
             stack.insert(0, node_id)
 
         return visited, stack
 
-    def get_sorted_nodes(self, breadth_search=True, graph=None):
+    def get_sorted_nodes(self, breadth_search=True, edge_adjacency=None, graph=None):
         # Gets sorted nodes via a breadth-first or depth-first search
         if graph is None:
             graph = self.graph
 
-        edge_adjacency = self.get_edge_adjacency(graph=graph)
         visited = set()
 
         if breadth_search:
             stack = {}
             for node_id in edge_adjacency:
-                visited, stack = self.breadth_first_search(edge_adjacency, node_id, visited, stack)
+                visited, stack = self.breadth_first_search(node_id, visited=visited, stack=stack, graph=graph)
         else:
             stack = []
             for node_id in edge_adjacency:
-                visited, stack = self.depth_first_search(edge_adjacency, node_id, visited, stack)
+                visited, stack = self.depth_first_search(node_id, visited=visited, stack=stack, graph=graph)
 
-        return stack         
+        return stack
+
+    # def get_node_paths(self, node_id, edge_adjacency=None, path=[], graph=None):
+
+    #     if edge_adjacency is None:
+    #         edge_adjacency = self.get_edge_adjacency(graph=graph)
+
+    #     path = path + [node_id]
+    #     if not edge_adjacency[node_id]:
+    #         return [path]
+        
+    #     node_paths = []
+    #     for neighbor in edge_adjacency[node_id]:
+    #         if neighbor not in path:
+    #             extended_paths = self.get_node_paths(neighbor, 
+    #                                                     edge_adjacency=edge_adjacency, 
+    #                                                     path=path, graph=graph)
+    #             node_paths.extend(extended_paths)
+    #     return node_paths
+
+    # def get_graph_text(self, graph=None):
+        
+    #     edge_adjacency = self.get_edge_adjacency(graph=graph)
+
+    #     graph_text = []
+    #     visited_nodes = []
+
+    #     for from_node_id in self.get_sorted_nodes(breadth_search=False, edge_adjacency=edge_adjacency, graph=graph):
+    #         if from_node_id not in visited_nodes:
+    #             from_cluster_id = self.get_node_attr(from_node_id, self.cluster_attr)
+    #             from_rank_id = self.get_node_attr(from_node_id, self.rank_attr)
+    #             from_text = self.get_node_attr(from_node_id, self.text_attr)
+    #             graph_text.append(f"#### {from_cluster_id} - {from_rank_id}")
+    #             graph_text.append("---")
+    #             node_text = []
+    #             for node_path in self.get_node_paths(from_node_id, edge_adjacency=edge_adjacency, graph=graph):
+    #                 node_path.remove(from_node_id)
+    #                 if len(node_path) != 0:
+    #                     path_text = f"- If {from_text}"
+    #                     for i, to_node_id in enumerate(node_path):
+                            
+    #                         to_cluster_id = self.get_node_attr(to_node_id, self.cluster_attr)
+    #                         to_rank_id = self.get_node_attr(to_node_id, self.rank_attr)
+    #                         to_text = self.get_node_attr(to_node_id, self.text_attr)
+
+    #                         path_text += f", then {to_text}"
+                        
+    #                         if (i == len(node_path) - 1) or ((from_cluster_id == to_cluster_id) and (from_rank_id == to_rank_id)):
+    #                             visited_nodes.append(to_node_id)
+    #                         else:
+    #                             path_text += f" see {to_cluster_id} - {to_rank_id}"
+    #                             break
+
+    #                     path_text += "."
+                    
+    #                 if path_text not in node_text:
+    #                     node_text.append(path_text)
+
+    #             graph_text.append("\n".join(node_text))
+
+    #     return "\n".join(graph_text)
+
